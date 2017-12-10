@@ -6,9 +6,9 @@ package service.coolweather.gson;
 
 public class AQI {
 
-    public AQIcity icity;
+    public AQIcity city;
 
-    private class AQIcity {
+    public class AQIcity {
         public String aqi;
         public String pm25;
     }

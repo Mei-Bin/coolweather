@@ -1,11 +1,12 @@
 package service.coolweather;
 
-import android.app.ListActivity;
 import android.app.ProgressDialog;
+import android.content.Intent;
+import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
-import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -31,7 +32,6 @@ import service.coolweather.db.City;
 import service.coolweather.db.County;
 import service.coolweather.db.Province;
 import service.coolweather.util.HttpUtil;
-import service.coolweather.util.LogUtil;
 import service.coolweather.util.Utility;
 
 /**
@@ -67,6 +67,16 @@ public class ChooseAreaFragment extends Fragment {
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        if (Build.VERSION.SDK_INT >= 21) {
+            View decorView = getActivity().getWindow().getDecorView();
+            /*
+            * View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN   Activity全屏显示，但状态栏不会被隐藏覆盖，状态栏依然可见，Activity顶端布局部分会被状态遮住
+            * View.SYSTEM_UI_FLAG_LAYOUT_STABLE  Activity的布局会显示在状态栏上面
+            * getWindow().setStatusBarColor(Color.TRANSPARENT);  将状态栏设置为透明色
+            * */
+            decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
+            getActivity().getWindow().setStatusBarColor(Color.TRANSPARENT);
+        }
         View view = inflater.inflate(R.layout.choose_area, container, false);
         titleText = (TextView) view.findViewById(R.id.title_text);
         backButton = (Button) view.findViewById(R.id.back_button);
@@ -90,6 +100,19 @@ public class ChooseAreaFragment extends Fragment {
                 } else if (currentLevel == LEVEL_CITY) {
                     selectCity = cityList.get(position);
                     queryCounties();
+                } else if (currentLevel == LEVEL_COUNTY) {
+                    String weatherId = countyList.get(position).getWeatherId();
+                    if (getActivity() instanceof MainActivity) {//如果是在主界面，逻辑不变
+                        Intent intent = new Intent(getActivity(), WeatherActivity.class);
+                        intent.putExtra("weather_id", weatherId);
+                        startActivity(intent);
+                        getActivity().finish();
+                    }else if (getActivity() instanceof WeatherActivity){//如果在天气界面,就重新载入数据
+                        WeatherActivity activity = (WeatherActivity) getActivity();
+                        activity.drawerLayout.closeDrawers();
+                        activity.swipeRefreshLayout.setRefreshing(true);
+                        activity.requestWeather(weatherId);
+                    }
                 }
             }
         });
@@ -106,7 +129,7 @@ public class ChooseAreaFragment extends Fragment {
         });
 
         //设备的返回键处理
-      //  backInterface();
+        //  backInterface();
         queryProvinces();
     }
 
@@ -126,7 +149,7 @@ public class ChooseAreaFragment extends Fragment {
                         isExit = false;
                     }
                 }, 2000);
-            }else {
+            } else {
                 getActivity().finish();
             }
         }
